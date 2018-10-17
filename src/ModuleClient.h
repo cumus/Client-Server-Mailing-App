@@ -22,33 +22,24 @@ private:
 	void updateMessenger();
 
 	void onPacketReceived(const InputMemoryStream &stream);
-
 	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
 
 	void sendPacketLogin(const char *username);
-
 	void sendPacketQueryMessages();
-
 	void sendPacketSendMessage(const char *receiver, const char *subject, const char *message);
-
 	void sendPacket(const OutputMemoryStream &stream);
 
 	
 	// GUI
-
 	void updateGUI();
-
 
 	// Low-level networking stuff
 
 	void connectToServer();
-
 	void disconnectFromServer();
 
 	void handleIncomingData();
-
 	void handleOutgoingData();
-
 
 	// Client connection state
 	enum class ClientState

@@ -12,76 +12,51 @@ class ModuleServer : public Module
 public:
 
 	// Constructor and destructor
-
 	ModuleServer();
-
 	~ModuleServer();
 
-
 	// Virtual methods from parent class Module
-
 	bool update() override;
-
 	bool cleanUp() override;
 
 private:
 
 	// Methods involving serialization / deserialization (contain TODOs)
-
 	void onPacketReceived(SOCKET socket, const InputMemoryStream& stream);
-
 	void onPacketReceivedLogin(SOCKET socket, const InputMemoryStream& stream);
-
 	void onPacketReceivedQueryAllMessages(SOCKET socket, const InputMemoryStream& stream);
-	
 	void onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream& stream);
 
 	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
-
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
 
-
 	// GUI
-
 	void updateGUI();
 
-
 	// Low level networking stuff
-
 	void startServer();
-
 	void stopServer();
 
 	void handleIncomingData();
-
 	void handleOutgoingData();
 
 	struct ClientStateInfo;
 
 	void handleIncomingDataFromClient(ClientStateInfo &info);
-
 	void handleOutgoingDataToClient(ClientStateInfo &info);
 
 	std::vector<SOCKET> getAllSockets() const;
 
-
 	// Client management
-
 	void createClientStateInfoForSocket(SOCKET s);
-
 	ClientStateInfo & getClientStateInfoForSocket(SOCKET s);
-
 	bool existsClientStateInfoForSocket(SOCKET s);
-
 	void deleteInvalidSockets();
 
 	// Database
-
 	IDatabaseGateway *database();
 
-
 	// Data members
-
 	enum class ServerState
 	{
 		Off,
