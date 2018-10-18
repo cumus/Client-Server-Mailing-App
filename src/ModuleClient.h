@@ -8,17 +8,13 @@
 class ModuleClient : public Module
 {
 public:
-
 	// Virtual methods from parent class Module
-
 	bool update() override;
-
 	bool cleanUp() override;
 
 private:
 
 	// Methods involving serialization / deserialization (contain TODOs)
-
 	void updateMessenger();
 
 	void onPacketReceived(const InputMemoryStream &stream);
@@ -28,13 +24,11 @@ private:
 	void sendPacketQueryMessages();
 	void sendPacketSendMessage(const char *receiver, const char *subject, const char *message);
 	void sendPacket(const OutputMemoryStream &stream);
-
 	
 	// GUI
 	void updateGUI();
 
 	// Low-level networking stuff
-
 	void connectToServer();
 	void disconnectFromServer();
 

@@ -87,9 +87,19 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 
 	uint32_t messageCount;
 	// TODO: Deserialize the number of messages
+	stream.Read(messageCount);
 
 	// TODO: Deserialize messages one by one and push_back them into the messages vector
 	// NOTE: The messages vector is an attribute of this class
+	for (uint32_t i = 0; i < messageCount; i++)
+	{
+		Message m;
+		stream.Read(m.senderUsername);
+		m.receiverUsername = senderBuf; // itself
+		stream.Read(m.subject);
+		stream.Read(m.body);
+		messages.push_back(m);
+	}
 
 	messengerState = MessengerState::ShowingMessages;
 }
@@ -99,8 +109,11 @@ void ModuleClient::sendPacketLogin(const char * username)
 	OutputMemoryStream stream;
 
 	// TODO: Serialize Login (packet type and username)
+	stream.Write(PacketType::LoginRequest);
+	stream.Write(std::string(username));
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
 
 	messengerState = MessengerState::RequestingMessages;
 }
@@ -110,8 +123,10 @@ void ModuleClient::sendPacketQueryMessages()
 	OutputMemoryStream stream;
 
 	// TODO: Serialize message (only the packet type)
+	stream.Write(PacketType::QueryAllMessagesRequest);
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
 
 	messengerState = MessengerState::ReceivingMessages;
 }
@@ -122,8 +137,15 @@ void ModuleClient::sendPacketSendMessage(const char * receiver, const char * sub
 
 	// TODO: Serialize message (packet type and all fields in the message)
 	// NOTE: remember that senderBuf contains the current client (i.e. the sender of the message)
+	stream.Write(PacketType::QueryAllMessagesRequest);
+	stream.Write(std::string(senderBuf));
+	stream.Write(std::string(receiver));
+	stream.Write(std::string(subject));
+	stream.Write(std::string(message));
+
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
 
 	messengerState = MessengerState::RequestingMessages;
 }
@@ -177,10 +199,7 @@ void ModuleClient::updateGUI()
 		// Disconnect button
 		if (ImGui::Button("Disconnect"))
 		{
-			if (state == ClientState::Connected)
-			{
-				state = ClientState::Disconnecting;
-			}
+			state = ClientState::Disconnecting;
 		}
 
 		if (messengerState == MessengerState::ComposingMessage)
