@@ -137,7 +137,7 @@ void ModuleClient::sendPacketSendMessage(const char * receiver, const char * sub
 
 	// TODO: Serialize message (packet type and all fields in the message)
 	// NOTE: remember that senderBuf contains the current client (i.e. the sender of the message)
-	stream.Write(PacketType::QueryAllMessagesRequest);
+	stream.Write(PacketType::SendMessageRequest);
 	stream.Write(std::string(senderBuf));
 	stream.Write(std::string(receiver));
 	stream.Write(std::string(subject));
@@ -197,6 +197,7 @@ void ModuleClient::updateGUI()
 	else if (state == ClientState::Connected)
 	{
 		// Disconnect button
+		ImGui::TextWrapped("Username: %s", senderBuf);
 		if (ImGui::Button("Disconnect"))
 		{
 			state = ClientState::Disconnecting;

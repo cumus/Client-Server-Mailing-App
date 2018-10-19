@@ -113,7 +113,7 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 	// -- serialize the array size
 	// -- serialize the messages in the array
 	outStream.Write(PacketType::QueryAllMessagesResponse);
-	outStream.Write(messages.size());
+	outStream.Write((int)messages.size());
 
 	std::vector<Message>::iterator it = messages.begin();
 	for (; it != messages.end(); it++)
