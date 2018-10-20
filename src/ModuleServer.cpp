@@ -17,6 +17,9 @@ ModuleServer::ModuleServer()
 {
 	mysqlDatabaseGateway = new MySqlDatabaseGateway();
 	simulatedDatabaseGateway = new SimulatedDatabaseGateway();
+
+	// Load default users
+	saved_clients["admin"] = "1234";
 }
 
 ModuleServer::~ModuleServer()
@@ -90,9 +93,32 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 	// TODO: Deserialize the login username into loginName
 	stream.Read(loginName);
 
-	// Register the client with this socket with the deserialized username
-	ClientStateInfo & client = getClientStateInfoForSocket(socket);
-	client.loginName = loginName;
+	std::string password;
+	stream.Read(password);
+
+	bool client_logged = false;
+
+	std::map<std::string, std::string>::iterator it = saved_clients.find(loginName);
+	if (it != saved_clients.end()) // registered user
+	{
+		if (it->second == password) // correct password
+			client_logged = true;
+	}
+	else
+	{
+		// register new user
+		saved_clients[loginName] = password;
+		client_logged = true;
+	}
+
+	if (client_logged)
+	{
+		// Register the client with this socket with the deserialized username
+		ClientStateInfo & client = getClientStateInfoForSocket(socket);
+		client.loginName = loginName;
+	}
+
+	sendPacketLoginResponse(socket, client_logged);
 }
 
 void ModuleServer::onPacketReceivedQueryAllMessages(SOCKET socket, const InputMemoryStream & stream)
@@ -125,6 +151,16 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 	}
 
 	// TODO: Send the packet (pass the outStream to the sendPacket function)
+	sendPacket(socket, outStream);
+}
+
+void ModuleServer::sendPacketLoginResponse(SOCKET socket, const bool connected)
+{
+	OutputMemoryStream outStream;
+
+	outStream.Write(PacketType::LoginResponse);
+	outStream.Write(connected);
+
 	sendPacket(socket, outStream);
 }
 

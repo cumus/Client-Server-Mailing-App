@@ -19,8 +19,9 @@ private:
 
 	void onPacketReceived(const InputMemoryStream &stream);
 	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
+	void onPacketReceivedLoginResponse(const InputMemoryStream &stream);
 
-	void sendPacketLogin(const char *username);
+	void sendPacketLogin(const char *username, const char * password);
 	void sendPacketQueryMessages();
 	void sendPacketSendMessage(const char *receiver, const char *subject, const char *message);
 	void sendPacket(const OutputMemoryStream &stream);
@@ -61,6 +62,7 @@ private:
 	enum class MessengerState
 	{
 		SendingLogin,
+		WaitingLoginResopnse,
 		RequestingMessages,
 		ReceivingMessages,
 		ShowingMessages,
@@ -79,6 +81,9 @@ private:
 	char receiverBuf[64]; // Buffer for the receiver
 	char subjectBuf[256]; // Buffer for the subject
 	char messageBuf[4096];// Buffer for the message
+
+	// Login Password
+	char passwordBuf[64];   // Buffer for the password
 
 
 	// Send and receive buffers (low-level stuff)

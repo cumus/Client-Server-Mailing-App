@@ -41,7 +41,10 @@ void ModuleClient::updateMessenger()
 	switch (messengerState)
 	{
 	case ModuleClient::MessengerState::SendingLogin:
-		sendPacketLogin(senderBuf);
+		sendPacketLogin(senderBuf, passwordBuf);
+		break;
+	case ModuleClient::MessengerState::WaitingLoginResopnse:
+		// Idle, do nothing
 		break;
 	case ModuleClient::MessengerState::RequestingMessages:
 		sendPacketQueryMessages();
@@ -72,6 +75,9 @@ void ModuleClient::onPacketReceived(const InputMemoryStream & stream)
 	
 	switch (packetType)
 	{
+	case PacketType::LoginResponse:
+		onPacketReceivedLoginResponse(stream);
+		break;
 	case PacketType::QueryAllMessagesResponse:
 		onPacketReceivedQueryAllMessagesResponse(stream);
 		break;
@@ -104,18 +110,31 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 	messengerState = MessengerState::ShowingMessages;
 }
 
-void ModuleClient::sendPacketLogin(const char * username)
+void ModuleClient::onPacketReceivedLoginResponse(const InputMemoryStream & stream)
+{
+	bool logged_in;
+	// TODO: Deserialize the number of messages
+	stream.Read(logged_in);
+
+	if (logged_in)
+		messengerState = MessengerState::ShowingMessages;
+	else
+		disconnectFromServer();
+}
+
+void ModuleClient::sendPacketLogin(const char * username, const char * password)
 {
 	OutputMemoryStream stream;
 
 	// TODO: Serialize Login (packet type and username)
 	stream.Write(PacketType::LoginRequest);
 	stream.Write(std::string(username));
+	stream.Write(std::string(password));
 
 	// TODO: Use sendPacket() to send the packet
 	sendPacket(stream);
 
-	messengerState = MessengerState::RequestingMessages;
+	messengerState = MessengerState::WaitingLoginResopnse;
 }
 
 void ModuleClient::sendPacketQueryMessages()
@@ -182,14 +201,19 @@ void ModuleClient::updateGUI()
 			static int port = 8000;
 			ImGui::InputInt("Port", &port);
 
-			// Connect button
+			// Credentials
 			ImGui::InputText("Login name", senderBuf, sizeof(senderBuf));
+			ImGui::InputText("Password", passwordBuf, sizeof(passwordBuf));
 
-			if (ImGui::Button("Connect"))
+			// Connect button
+			if (!std::string(passwordBuf).empty())
 			{
-				if (state == ClientState::Disconnected)
+				if (ImGui::Button("Connect"))
 				{
-					state = ClientState::Connecting;
+					if (state == ClientState::Disconnected)
+					{
+						state = ClientState::Connecting;
+					}
 				}
 			}
 		}

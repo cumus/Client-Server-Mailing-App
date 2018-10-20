@@ -4,6 +4,7 @@
 #include "SocketUtils.h"
 #include "serialization/MemoryStream.h"
 #include <list>
+#include <map>
 
 class IDatabaseGateway;
 
@@ -28,6 +29,7 @@ private:
 	void onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream& stream);
 
 	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
+	void sendPacketLoginResponse(SOCKET socket, const bool connected);
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
 
 	// GUI
@@ -91,6 +93,7 @@ private:
 
 		// Login
 		std::string loginName;
+		std::string password;
 
 		// bool should it be deleted?
 		bool invalid = false;
@@ -98,6 +101,9 @@ private:
 
 	// List with all connected clients
 	std::list<ClientStateInfo> clients;
+
+	// Saved Clients
+	std::map<std::string, std::string> saved_clients;
 
 	// A gateway to database operations
 	IDatabaseGateway *simulatedDatabaseGateway;
