@@ -4,6 +4,8 @@
 
 SimulatedDatabaseGateway::SimulatedDatabaseGateway()
 {
+	// Load default users
+	saved_clients["admin"] = "1234";
 }
 
 
@@ -27,4 +29,24 @@ std::vector<Message> SimulatedDatabaseGateway::getAllMessagesReceivedByUser(cons
 		}
 	}
 	return messages;
+}
+
+bool SimulatedDatabaseGateway::CheckPasswordForClient(const std::string & username, const std::string & password)
+{
+	bool ret = false;
+
+	std::map<std::string, std::string>::iterator it = saved_clients.find(username);
+	if (it != saved_clients.end()) // registered user
+	{
+		// check for correct password
+		ret = (it->second == password);
+	}
+	else
+	{
+		// register new user
+		saved_clients[username] = password;
+		ret = true;
+	}
+
+	return ret;
 }

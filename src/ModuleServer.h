@@ -4,7 +4,6 @@
 #include "SocketUtils.h"
 #include "serialization/MemoryStream.h"
 #include <list>
-#include <map>
 
 class IDatabaseGateway;
 
@@ -101,9 +100,6 @@ private:
 
 	// List with all connected clients
 	std::list<ClientStateInfo> clients;
-
-	// Saved Clients
-	std::map<std::string, std::string> saved_clients;
 
 	// A gateway to database operations
 	IDatabaseGateway *simulatedDatabaseGateway;

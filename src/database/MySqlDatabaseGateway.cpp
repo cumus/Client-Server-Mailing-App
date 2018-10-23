@@ -78,6 +78,21 @@ std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const st
 	return messages;
 }
 
+bool MySqlDatabaseGateway::CheckPasswordForClient(const std::string & username, const std::string & password)
+{
+	bool ret = false;
+
+	// check registered clients if username exists
+	// if exists
+		// check if password is correc
+		// if correct, ret = true
+		// else, ret = false
+	// else
+		// add to registered users
+
+	return ret;
+}
+
 void MySqlDatabaseGateway::updateGUI()
 {
 	ImGui::Separator();

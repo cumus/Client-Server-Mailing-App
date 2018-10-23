@@ -20,6 +20,8 @@ public:
 
 	virtual std::vector<Message> getAllMessagesReceivedByUser(const std::string &username) = 0;
 
+	virtual bool CheckPasswordForClient(const std::string &username, const std::string &password) = 0;
+
 	virtual void updateGUI() { }
 };
 

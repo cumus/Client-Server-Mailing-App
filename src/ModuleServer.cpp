@@ -17,9 +17,6 @@ ModuleServer::ModuleServer()
 {
 	mysqlDatabaseGateway = new MySqlDatabaseGateway();
 	simulatedDatabaseGateway = new SimulatedDatabaseGateway();
-
-	// Load default users
-	saved_clients["admin"] = "1234";
 }
 
 ModuleServer::~ModuleServer()
@@ -89,34 +86,19 @@ void ModuleServer::onPacketReceived(SOCKET socket, const InputMemoryStream & str
 
 void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream & stream)
 {
-	std::string loginName;
+	std::string loginName, password;
 	// TODO: Deserialize the login username into loginName
 	stream.Read(loginName);
-
-	std::string password;
 	stream.Read(password);
 
-	bool client_logged = false;
+	bool client_logged = database()->CheckPasswordForClient(loginName, password);
 
-	std::map<std::string, std::string>::iterator it = saved_clients.find(loginName);
-	if (it != saved_clients.end()) // registered user
-	{
-		if (it->second == password) // correct password
-			client_logged = true;
-	}
-	else
-	{
-		// register new user
-		saved_clients[loginName] = password;
-		client_logged = true;
-	}
+	ClientStateInfo & client = getClientStateInfoForSocket(socket);
 
 	if (client_logged)
-	{
-		// Register the client with this socket with the deserialized username
-		ClientStateInfo & client = getClientStateInfoForSocket(socket);
-		client.loginName = loginName;
-	}
+		client.loginName = loginName; // Register the client with this socket with the deserialized username
+	else
+		//client.invalid = true;
 
 	sendPacketLoginResponse(socket, client_logged);
 }

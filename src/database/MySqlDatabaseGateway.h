@@ -20,6 +20,8 @@ public:
 
 	std::vector<Message> getAllMessagesReceivedByUser(const std::string &username) override;
 
+	bool CheckPasswordForClient(const std::string &username, const std::string &password) override;
+	
 	virtual void updateGUI() override;
 
 private:
