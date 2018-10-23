@@ -84,7 +84,7 @@ private:
 
 	// Login Password
 	char passwordBuf[64];   // Buffer for the password
-
+	bool hasLoggedIn = false;
 
 	// Send and receive buffers (low-level stuff)
 

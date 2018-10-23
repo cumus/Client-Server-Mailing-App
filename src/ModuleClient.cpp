@@ -112,14 +112,13 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 
 void ModuleClient::onPacketReceivedLoginResponse(const InputMemoryStream & stream)
 {
-	bool logged_in;
 	// TODO: Deserialize the number of messages
-	stream.Read(logged_in);
+	stream.Read(hasLoggedIn);
 
-	if (logged_in)
-		messengerState = MessengerState::ShowingMessages;
+	if (hasLoggedIn)
+		messengerState = MessengerState::RequestingMessages;
 	else
-		disconnectFromServer();
+		state = ClientState::Disconnecting;
 }
 
 void ModuleClient::sendPacketLogin(const char * username, const char * password)
@@ -187,7 +186,6 @@ void ModuleClient::sendPacket(const OutputMemoryStream & stream)
 void ModuleClient::updateGUI()
 {
 	ImGui::Begin("Client Window");
-
 
 	if (state == ClientState::Disconnected)
 	{
@@ -328,6 +326,7 @@ void ModuleClient::disconnectFromServer()
 	sendBuffer.clear();
 	sendHead = 0;
 	state = ClientState::Disconnected;
+	hasLoggedIn = false;
 }
 
 void ModuleClient::handleIncomingData()
@@ -354,6 +353,13 @@ void ModuleClient::handleIncomingData()
 		if (res == 0)
 		{
 			state = ClientState::Disconnecting;
+			LOG("Disconnection from server");
+			return;
+		}
+		else if (res == 6)
+		{
+			state = ClientState::Disconnecting;
+			LOG("Wrong Login Credentials");
 			LOG("Disconnection from server");
 			return;
 		}
