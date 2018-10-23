@@ -5,7 +5,7 @@
 SimulatedDatabaseGateway::SimulatedDatabaseGateway()
 {
 	// Load default users
-	saved_clients["admin"] = "81dc9bdb52d04dc20036dbd8313ed055";
+	RegisterClient("admin", "81dc9bdb52d04dc20036dbd8313ed055");
 }
 
 
@@ -44,9 +44,14 @@ bool SimulatedDatabaseGateway::CheckPasswordForClient(const std::string & userna
 	else
 	{
 		// register new user
-		saved_clients[username] = password;
-		ret = true;
+		ret = RegisterClient(username, password);
 	}
 
 	return ret;
+}
+
+bool SimulatedDatabaseGateway::RegisterClient(const std::string & username, const std::string & password)
+{
+	saved_clients[username] = password;
+	return true;
 }

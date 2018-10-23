@@ -22,6 +22,8 @@ public:
 
 	virtual bool CheckPasswordForClient(const std::string &username, const std::string &password) = 0;
 
+	virtual bool RegisterClient(const std::string &username, const std::string &password) = 0;
+
 	virtual void updateGUI() { }
 };
 

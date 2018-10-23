@@ -24,6 +24,8 @@ public:
 
 	bool CheckPasswordForClient(const std::string &username, const std::string &password) override;
 
+	bool RegisterClient(const std::string &username, const std::string &password) override;
+
 
 private:
 

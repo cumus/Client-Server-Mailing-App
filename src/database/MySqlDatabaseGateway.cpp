@@ -82,15 +82,39 @@ bool MySqlDatabaseGateway::CheckPasswordForClient(const std::string & username, 
 {
 	bool ret = false;
 
-	// check registered clients if username exists
-	// if exists
-		// check if password is correc
-		// if correct, ret = true
-		// else, ret = false
-	// else
-		// add to registered users
+	DBConnection db(bufMySqlHost, bufMySqlPort, bufMySqlDatabase, bufMySqlUsername, bufMySqlPassword);
+
+	if (db.isConnected())
+	{
+		std::string sqlStatement;
+		// Create the SQL statement to query user
+		sqlStatement = stringFormat("SELECT * FROM user WHERE name = '%s'", username.c_str());
+
+		DBResultSet res = db.sql(sqlStatement.c_str());
+
+		if (!res.rows.empty()) // registered user
+		{
+			// check for correct password
+			if(res.rows[0].columns[1] == password) ret = true;
+		}
+		else
+		{
+			// register new user
+			//Create the SQL statement to insert new client
+			sqlStatement = stringFormat("INSERT INTO user VALUES ('%s','%s')", username.c_str(), password.c_str());
+
+			db.sql(sqlStatement.c_str());
+			ret = true;
+		}
+
+	}
 
 	return ret;
+}
+
+bool MySqlDatabaseGateway::RegisterClient(const std::string & username, const std::string & password)
+{
+	return true;
 }
 
 void MySqlDatabaseGateway::updateGUI()
