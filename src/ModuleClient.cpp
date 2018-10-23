@@ -2,6 +2,7 @@
 #include "Log.h"
 #include "imgui/imgui.h"
 #include "serialization/PacketTypes.h"
+#include "md5.h"
 
 #define HEADER_SIZE sizeof(uint32_t)
 #define RECV_CHUNK_SIZE 4096
@@ -128,7 +129,7 @@ void ModuleClient::sendPacketLogin(const char * username, const char * password)
 	// TODO: Serialize Login (packet type and username)
 	stream.Write(PacketType::LoginRequest);
 	stream.Write(std::string(username));
-	stream.Write(std::string(password));
+	stream.Write(md5(password));
 
 	// TODO: Use sendPacket() to send the packet
 	sendPacket(stream);

@@ -5,7 +5,7 @@
 SimulatedDatabaseGateway::SimulatedDatabaseGateway()
 {
 	// Load default users
-	saved_clients["admin"] = "1234";
+	saved_clients["admin"] = "81dc9bdb52d04dc20036dbd8313ed055";
 }
 
 

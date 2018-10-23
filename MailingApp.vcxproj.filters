@@ -31,6 +31,12 @@
     <Filter Include="Source Files\serialization">
       <UniqueIdentifier>{e2211005-1676-47c4-a238-5b63df081d67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\md5">
+      <UniqueIdentifier>{cbc06680-191e-4548-8cf0-94b9b71c8f6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\md5">
+      <UniqueIdentifier>{75d5c63c-217f-483f-879b-eef33f47c61d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -89,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="src\serialization\MemoryStream.cpp">
       <Filter>Source Files\serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="md5.cpp">
+      <Filter>Source Files\md5</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,6 +175,9 @@
     </ClInclude>
     <ClInclude Include="src\serialization\PacketTypes.h">
       <Filter>Header Files\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="md5.h">
+      <Filter>Header Files\md5</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

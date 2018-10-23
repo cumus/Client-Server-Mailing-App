@@ -115,6 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="md5.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\database\DBConnection.cpp" />
     <ClCompile Include="src\database\MySqlDatabaseGateway.cpp" />
@@ -136,6 +137,7 @@
     <ClCompile Include="src\SocketUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="md5.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\database\DatabaseTypes.h" />
     <ClInclude Include="src\database\DBConnection.h" />

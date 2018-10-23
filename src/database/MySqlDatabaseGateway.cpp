@@ -42,7 +42,7 @@ void MySqlDatabaseGateway::insertMessage(const Message & message)
 
 		std::string sqlStatement;
 		// TODO: Create the SQL statement to insert the passed message into the DB (INSERT)
-
+		sqlStatement = stringFormat("INSERT INTO message VALUES ('%s','%s','%s','%s')", message.senderUsername.c_str(), message.receiverUsername.c_str(), message.subject.c_str(), message.body.c_str());
 		// insert some messages
 		db.sql(sqlStatement.c_str());
 	}
@@ -58,7 +58,7 @@ std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const st
 	{
 		std::string sqlStatement;
 		// TODO: Create the SQL statement to query all messages from the given user (SELECT)
-
+		sqlStatement = stringFormat("SELECT * FROM message WHERE receiver = '%s'", username.c_str());
 		// consult all messages
 		DBResultSet res = db.sql(sqlStatement.c_str());
 
