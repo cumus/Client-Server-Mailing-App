@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Log.h"
+#include <Windows.h>
 
 Application * App = nullptr;
 
@@ -18,6 +19,8 @@ int main(int argc, char **argv)
 	int result = EXIT_FAILURE;
 
 	MainState state = MainState::Create;
+
+	::ShowWindow(::GetConsoleWindow(), SW_HIDE);
 
 	while (state != MainState::Exit)
 	{
