@@ -47,6 +47,12 @@ void ModuleClient::updateMessenger()
 	case ModuleClient::MessengerState::WaitingLoginResopnse:
 		// Idle, do nothing
 		break;
+	case ModuleClient::MessengerState::RequestingClients:
+		sendPacketQueryClients();
+		break;
+	case ModuleClient::MessengerState::ReceivingClients:
+		// Idle, do nothing
+		break;
 	case ModuleClient::MessengerState::RequestingMessages:
 		sendPacketQueryMessages();
 		break;
@@ -79,12 +85,47 @@ void ModuleClient::onPacketReceived(const InputMemoryStream & stream)
 	case PacketType::LoginResponse:
 		onPacketReceivedLoginResponse(stream);
 		break;
+	case PacketType::QueryClientsResponse:
+		onPacketReceivedQueryClientsResponse(stream);
+		break;
 	case PacketType::QueryAllMessagesResponse:
 		onPacketReceivedQueryAllMessagesResponse(stream);
 		break;
 	default:
 		LOG("Unknown packet type received");
 		break;
+	}
+}
+
+void ModuleClient::onPacketReceivedLoginResponse(const InputMemoryStream & stream)
+{
+	bool hasLoggedIn;
+	stream.Read(hasLoggedIn);
+
+	if (hasLoggedIn)
+	{
+		messengerState = MessengerState::RequestingClients;
+	}
+	else
+	{
+		hasLoginError = true;
+		state = ClientState::Disconnecting;
+	}
+}
+
+void ModuleClient::onPacketReceivedQueryClientsResponse(const InputMemoryStream & stream)
+{
+	registered_clients.clear();
+
+	uint32_t clientCount;
+	stream.Read(clientCount);
+
+	for (uint32_t i = 0; i < clientCount; i++)
+	{
+		OtherClient client;
+		stream.Read(client.name);
+		//stream.Read(client.state);
+		registered_clients.push_back(client);
 	}
 }
 
@@ -111,40 +152,34 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 	messengerState = MessengerState::ShowingMessages;
 }
 
-void ModuleClient::onPacketReceivedLoginResponse(const InputMemoryStream & stream)
-{
-	// TODO: Deserialize the number of messages
-	stream.Read(hasLoggedIn);
-
-	if (hasLoggedIn)
-		messengerState = MessengerState::RequestingMessages;
-	else
-		state = ClientState::Disconnecting;
-}
-
 void ModuleClient::sendPacketLogin(const char * username, const char * password)
 {
 	OutputMemoryStream stream;
 
-	// TODO: Serialize Login (packet type and username)
 	stream.Write(PacketType::LoginRequest);
 	stream.Write(std::string(username));
 	stream.Write(md5(password));
 
-	// TODO: Use sendPacket() to send the packet
 	sendPacket(stream);
 
 	messengerState = MessengerState::WaitingLoginResopnse;
 }
 
+void ModuleClient::sendPacketQueryClients()
+{
+	OutputMemoryStream stream;
+	stream.Write(PacketType::QueryClientsRequest);
+
+	sendPacket(stream);
+
+	messengerState = MessengerState::ReceivingClients;
+}
+
 void ModuleClient::sendPacketQueryMessages()
 {
 	OutputMemoryStream stream;
-
-	// TODO: Serialize message (only the packet type)
 	stream.Write(PacketType::QueryAllMessagesRequest);
 
-	// TODO: Use sendPacket() to send the packet
 	sendPacket(stream);
 
 	messengerState = MessengerState::ReceivingMessages;
@@ -186,94 +221,159 @@ void ModuleClient::sendPacket(const OutputMemoryStream & stream)
 
 void ModuleClient::updateGUI()
 {
-	ImGui::Begin("Client Window");
-
-	if (state == ClientState::Disconnected)
+	if (chat_active && state == ClientState::Connected)
 	{
-		if (ImGui::CollapsingHeader("Server data", ImGuiTreeNodeFlags_DefaultOpen))
+		ImGui::Begin("Client Window");
+
+		ImGui::TextWrapped("Username: %s", senderBuf);
+
+		// Disconnect button
+		if (ImGui::Button("Disconnect"))
+			state = ClientState::Disconnecting;
+
+		// Chat select
+		std::vector<OtherClient>::iterator clients = registered_clients.begin();
+		for (; clients != registered_clients.end(); clients++)
 		{
-			// IP address
-			static char ipBuffer[64] = "127.0.0.1";
-			ImGui::InputText("IP", ipBuffer, sizeof(ipBuffer));
-
-			// Port
-			static int port = 8000;
-			ImGui::InputInt("Port", &port);
-
-			// Credentials
-			ImGui::InputText("Login name", senderBuf, sizeof(senderBuf));
-			ImGui::InputText("Password", passwordBuf, sizeof(passwordBuf));
-
-			// Connect button
-			if (!std::string(passwordBuf).empty())
+			if (ImGui::Button(clients->name.c_str()))
 			{
-				if (ImGui::Button("Connect"))
+				// set new chat window reciever
+				chat_reciever = clients->name;
+
+				// add messages to chat
+				chat_messages.clear();
+				std::vector<Message>::iterator message = messages.begin();
+				for (; message != messages.end(); message++)
 				{
-					if (state == ClientState::Disconnected)
+					if (message->senderUsername == chat_reciever)
+						chat_messages.push_back({ true, message->body });
+					else if (message->receiverUsername == chat_reciever)
+						chat_messages.push_back({ false, message->body });
+				}
+			}
+		}
+
+		ImGui::End();
+
+		// Online Chat Window
+		if (chat_reciever.empty())
+		{
+			ImGui::Begin("Online Chat");
+			ImGui::TextWrapped("Select a user to chat with");
+		}
+		else
+		{
+			ImGui::Begin(chat_reciever.c_str());
+
+			ImGui::Columns(2, NULL, false);
+			std::vector<std::pair<bool, std::string>>::iterator it;
+			bool printing_on_left = true;
+			for (it = chat_messages.begin(); it != chat_messages.end(); it++)
+			{
+				if (it->first != printing_on_left)
+				{
+					printing_on_left = it->first;
+					ImGui::NextColumn();
+				}
+
+				ImGui::TextWrapped(it->second.c_str());
+			}
+			ImGui::Columns(1);
+		}
+
+		ImGui::End();
+	}
+	else
+	{
+		// Pos = 6, 7
+		// Size = 234, 548
+		ImGui::Begin("Client Window");
+
+		if (state == ClientState::Disconnected)
+		{
+			if (ImGui::CollapsingHeader("Server data", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				// IP address
+				static char ipBuffer[64] = "127.0.0.1";
+				ImGui::InputText("IP", ipBuffer, sizeof(ipBuffer));
+
+				// Port
+				static int port = 8000;
+				ImGui::InputInt("Port", &port);
+
+				// Credentials
+				ImGui::InputText("Login name", senderBuf, sizeof(senderBuf));
+				ImGui::InputText("Password", passwordBuf, sizeof(passwordBuf));
+
+				// Connect button
+				if (!std::string(passwordBuf).empty())
+				{
+					if (ImGui::Button("Connect"))
 					{
-						state = ClientState::Connecting;
+						if (state == ClientState::Disconnected)
+						{
+							state = ClientState::Connecting;
+						}
 					}
 				}
 			}
 		}
-	}
-	else if (state == ClientState::Connected)
-	{
-		// Disconnect button
-		ImGui::TextWrapped("Username: %s", senderBuf);
-		if (ImGui::Button("Disconnect"))
+		else if (state == ClientState::Connected)
 		{
-			state = ClientState::Disconnecting;
-		}
+			ImGui::TextWrapped("Username: %s", senderBuf);
 
-		if (messengerState == MessengerState::ComposingMessage)
-		{
-			ImGui::InputText("Receiver", receiverBuf, sizeof(receiverBuf));
-			ImGui::InputText("Subject", subjectBuf, sizeof(subjectBuf));
-			ImGui::InputTextMultiline("Message", messageBuf, sizeof(messageBuf));
-			if (ImGui::Button("Send"))
-			{
-				messengerState = MessengerState::SendingMessage;
-			}
-			if (ImGui::Button("Discard"))
-			{
-				messengerState = MessengerState::ShowingMessages;
-			}
-		}
-		else if (messengerState == MessengerState::ShowingMessages)
-		{
-			if (ImGui::Button("Compose message"))
-			{
-				messengerState = MessengerState::ComposingMessage;
-			}
+			// Disconnect button
+			if (ImGui::Button("Disconnect"))
+				state = ClientState::Disconnecting;
 
-			if (ImGui::Button("Refresh inbox"))
+			if (messengerState == MessengerState::ComposingMessage)
 			{
-				messengerState = MessengerState::RequestingMessages;
-			}
-
-			ImGui::Text("Inbox:");
-
-			if (messages.empty()) {
-				ImGui::Text(" - Your inbox is empty.");
-			}
-
-			int i = 0;
-			for (auto &message : messages)
-			{
-				ImGui::PushID(i++);
-				if (ImGui::TreeNode(&message, "%s - %s", message.senderUsername.c_str(), message.subject.c_str()))
+				ImGui::InputText("Receiver", receiverBuf, sizeof(receiverBuf));
+				ImGui::InputText("Subject", subjectBuf, sizeof(subjectBuf));
+				ImGui::InputTextMultiline("Message", messageBuf, sizeof(messageBuf));
+				if (ImGui::Button("Send"))
 				{
-					ImGui::TextWrapped("%s", message.body.c_str());
-					ImGui::TreePop();
+					messengerState = MessengerState::SendingMessage;
 				}
-				ImGui::PopID();
+				if (ImGui::Button("Discard"))
+				{
+					messengerState = MessengerState::ShowingMessages;
+				}
+			}
+			else if (messengerState == MessengerState::ShowingMessages)
+			{
+				if (ImGui::Button("Compose message"))
+				{
+					messengerState = MessengerState::ComposingMessage;
+				}
+
+				if (ImGui::Button("Refresh inbox"))
+				{
+					messengerState = MessengerState::RequestingMessages;
+				}
+
+				ImGui::Text("Inbox:");
+
+				if (messages.empty()) {
+					ImGui::Text(" - Your inbox is empty.");
+				}
+
+				int i = 0;
+				for (auto &message : messages)
+				{
+					ImGui::PushID(i++);
+					if (ImGui::TreeNode(&message, "%s - %s", message.senderUsername.c_str(), message.subject.c_str()))
+					{
+						ImGui::TextWrapped("%s", message.body.c_str());
+						ImGui::TreePop();
+					}
+					ImGui::PopID();
+				}
 			}
 		}
+
+		ImGui::End();
 	}
-
-	ImGui::End();
-
 }
 
 
@@ -327,7 +427,6 @@ void ModuleClient::disconnectFromServer()
 	sendBuffer.clear();
 	sendHead = 0;
 	state = ClientState::Disconnected;
-	hasLoggedIn = false;
 }
 
 void ModuleClient::handleIncomingData()

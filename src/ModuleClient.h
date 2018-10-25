@@ -18,10 +18,12 @@ private:
 	void updateMessenger();
 
 	void onPacketReceived(const InputMemoryStream &stream);
-	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
 	void onPacketReceivedLoginResponse(const InputMemoryStream &stream);
+	void onPacketReceivedQueryClientsResponse(const InputMemoryStream &stream);
+	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
 
 	void sendPacketLogin(const char *username, const char * password);
+	void sendPacketQueryClients();
 	void sendPacketQueryMessages();
 	void sendPacketSendMessage(const char *receiver, const char *subject, const char *message);
 	void sendPacket(const OutputMemoryStream &stream);
@@ -63,6 +65,8 @@ private:
 	{
 		SendingLogin,
 		WaitingLoginResopnse,
+		RequestingClients,
+		ReceivingClients,
 		RequestingMessages,
 		ReceivingMessages,
 		ShowingMessages,
@@ -84,7 +88,7 @@ private:
 
 	// Login Password
 	char passwordBuf[64];   // Buffer for the password
-	bool hasLoggedIn = false;
+	bool hasLoginError = false;
 
 	// Send and receive buffers (low-level stuff)
 
@@ -96,4 +100,18 @@ private:
 	// Send buffer state
 	size_t sendHead = 0;
 	std::vector<uint8_t> sendBuffer;
+
+	// Online Chat
+	struct OtherClient
+	{
+		std::string name;
+		int state = 0;
+		bool typing = false;
+	};
+
+	std::vector<OtherClient> registered_clients;
+
+	bool chat_active = true;
+	std::string chat_reciever;
+	std::vector<std::pair<bool, std::string>> chat_messages;
 };
