@@ -24,11 +24,13 @@ private:
 	// Methods involving serialization / deserialization (contain TODOs)
 	void onPacketReceived(SOCKET socket, const InputMemoryStream& stream);
 	void onPacketReceivedLogin(SOCKET socket, const InputMemoryStream& stream);
-	void onPacketReceivedQueryAllMessages(SOCKET socket, const InputMemoryStream& stream);
+	void onPacketReceivedQueryClients(SOCKET socket);
+	void onPacketReceivedQueryAllMessages(SOCKET socket);
 	void onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream& stream);
 
 	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
 	void sendPacketLoginResponse(SOCKET socket, const bool connected);
+	void sendPacketQueryClientsResponse(SOCKET socket);
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
 
 	// GUI
@@ -93,6 +95,7 @@ private:
 		// Login
 		std::string loginName;
 		std::string password;
+		int state = 0;
 
 		// bool should it be deleted?
 		bool invalid = false;

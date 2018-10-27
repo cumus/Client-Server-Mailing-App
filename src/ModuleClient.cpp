@@ -78,7 +78,7 @@ void ModuleClient::onPacketReceived(const InputMemoryStream & stream)
 	PacketType packetType;
 	stream.Read(packetType);
 
-	LOG("onPacketReceived() - packetType: %d", (int)packetType);
+	LOG("onPacketReceived() - packetType: %s", packet_names[(int)packetType]);
 	
 	switch (packetType)
 	{
@@ -124,9 +124,11 @@ void ModuleClient::onPacketReceivedQueryClientsResponse(const InputMemoryStream 
 	{
 		OtherClient client;
 		stream.Read(client.name);
-		//stream.Read(client.state);
+		stream.Read(client.state);
 		registered_clients.push_back(client);
 	}
+
+	messengerState = MessengerState::RequestingMessages;
 }
 
 void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream & stream)
@@ -456,13 +458,13 @@ void ModuleClient::handleIncomingData()
 			LOG("Disconnection from server");
 			return;
 		}
-		else if (res == 6)
+		/*else if (res == 6)
 		{
 			state = ClientState::Disconnecting;
 			LOG("Wrong Login Credentials");
 			LOG("Disconnection from server");
 			return;
-		}
+		}*/
 
 		recvByteHead += res;
 		while (recvByteHead - recvPacketHead > HEADER_SIZE)

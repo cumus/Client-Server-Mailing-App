@@ -63,7 +63,7 @@ void ModuleServer::onPacketReceived(SOCKET socket, const InputMemoryStream & str
 	// TODO: Deserialize the packet type
 	stream.Read(packetType);
 
-	LOG("onPacketReceived() - packetType: %d", (int)packetType);
+	LOG("onPacketReceived() - packetType: %s", packet_names[(int)packetType]);
 
 	switch (packetType)
 	{
@@ -72,8 +72,11 @@ void ModuleServer::onPacketReceived(SOCKET socket, const InputMemoryStream & str
 	case PacketType::LoginRequest:
 		onPacketReceivedLogin(socket, stream);
 		break;
+	case PacketType::QueryClientsRequest:
+		onPacketReceivedQueryClients(socket);
+		break;
 	case PacketType::QueryAllMessagesRequest:
-		onPacketReceivedQueryAllMessages(socket, stream);
+		onPacketReceivedQueryAllMessages(socket);
 		break;
 	case PacketType::SendMessageRequest:
 		onPacketReceivedSendMessage(socket, stream);
@@ -93,17 +96,24 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 
 	bool client_logged = database()->CheckPasswordForClient(loginName, password);
 
+	LOG(client_logged ?
+		"Client %s logged in" :
+		"Wrong credentials for %s", loginName);
+
 	ClientStateInfo & client = getClientStateInfoForSocket(socket);
 
 	if (client_logged)
 		client.loginName = loginName; // Register the client with this socket with the deserialized username
-	else
-		//client.invalid = true;
 
 	sendPacketLoginResponse(socket, client_logged);
 }
 
-void ModuleServer::onPacketReceivedQueryAllMessages(SOCKET socket, const InputMemoryStream & stream)
+void ModuleServer::onPacketReceivedQueryClients(SOCKET socket)
+{
+	sendPacketQueryClientsResponse(socket);
+}
+
+void ModuleServer::onPacketReceivedQueryAllMessages(SOCKET socket)
 {
 	// Get the username of this socket and send the response to it
 	ClientStateInfo & clientStateInfo = getClientStateInfoForSocket(socket);
@@ -112,6 +122,7 @@ void ModuleServer::onPacketReceivedQueryAllMessages(SOCKET socket, const InputMe
 
 void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username)
 {
+	LOG("Sending all messages to %s", username.c_str());
 	// Obtain the list of messages from the DB
 	std::vector<Message> messages = database()->getAllMessagesReceivedByUser(username);
 
@@ -142,6 +153,23 @@ void ModuleServer::sendPacketLoginResponse(SOCKET socket, const bool connected)
 
 	outStream.Write(PacketType::LoginResponse);
 	outStream.Write(connected);
+
+	sendPacket(socket, outStream);
+}
+
+void ModuleServer::sendPacketQueryClientsResponse(SOCKET socket)
+{
+	LOG("Sending all clients");
+	OutputMemoryStream outStream;
+
+	outStream.Write(PacketType::QueryClientsResponse);
+	outStream.Write(clients.size());
+
+	for (auto c : clients)
+	{
+		outStream.Write(c.loginName);
+		outStream.Write(c.state);
+	}
 
 	sendPacket(socket, outStream);
 }
