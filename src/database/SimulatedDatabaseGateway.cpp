@@ -18,12 +18,13 @@ void SimulatedDatabaseGateway::insertMessage(const Message & message)
 	allMessages.push_back(message);
 }
 
-std::vector<Message> SimulatedDatabaseGateway::getAllMessagesReceivedByUser(const std::string & username)
+std::vector<Message> SimulatedDatabaseGateway::getAllMessagesFromUser(const std::string & username)
 {
 	std::vector<Message> messages;
 	for (const auto & message : allMessages)
 	{
-		if (message.receiverUsername == username)
+		if (message.receiverUsername == username
+			|| message.senderUsername == username)
 		{
 			messages.push_back(message);
 		}

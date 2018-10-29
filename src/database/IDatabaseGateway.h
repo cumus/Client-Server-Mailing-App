@@ -18,7 +18,7 @@ public:
 
 	virtual void insertMessage(const Message &message) = 0;
 
-	virtual std::vector<Message> getAllMessagesReceivedByUser(const std::string &username) = 0;
+	virtual std::vector<Message> getAllMessagesFromUser(const std::string &username) = 0;
 
 	virtual bool CheckPasswordForClient(const std::string &username, const std::string &password) = 0;
 

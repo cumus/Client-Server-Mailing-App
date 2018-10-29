@@ -48,7 +48,7 @@ void MySqlDatabaseGateway::insertMessage(const Message & message)
 	}
 }
 
-std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const std::string & username)
+std::vector<Message> MySqlDatabaseGateway::getAllMessagesFromUser(const std::string & username)
 {
 	std::vector<Message> messages;
 
@@ -58,7 +58,7 @@ std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const st
 	{
 		std::string sqlStatement;
 		// TODO: Create the SQL statement to query all messages from the given user (SELECT)
-		sqlStatement = stringFormat("SELECT * FROM message WHERE receiver = '%s'", username.c_str());
+		sqlStatement = stringFormat("SELECT * FROM message WHERE receiver = '%s' OR sender = '%s'", username.c_str(), username.c_str());
 		// consult all messages
 		DBResultSet res = db.sql(sqlStatement.c_str());
 

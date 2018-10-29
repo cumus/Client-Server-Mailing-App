@@ -18,7 +18,7 @@ public:
 
 	void insertMessage(const Message &message) override;
 
-	std::vector<Message> getAllMessagesReceivedByUser(const std::string &username) override;
+	std::vector<Message> getAllMessagesFromUser(const std::string &username) override;
 
 	bool CheckPasswordForClient(const std::string &username, const std::string &password) override;
 	
