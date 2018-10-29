@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "SocketUtils.h"
 #include "serialization/MemoryStream.h"
+#include "database\DatabaseTypes.h"
 #include <list>
 
 class IDatabaseGateway;
@@ -28,8 +29,11 @@ private:
 	void onPacketReceivedQueryAllMessages(SOCKET socket);
 	void onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream& stream);
 
-	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
 	void sendPacketLoginResponse(SOCKET socket, const bool connected);
+	void sendPacketUserConnected(SOCKET socket, const char *client);
+	void sendPacketMessageSent(SOCKET socket, const Message& message);
+
+	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
 	void sendPacketQueryClientsResponse(SOCKET socket);
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
 

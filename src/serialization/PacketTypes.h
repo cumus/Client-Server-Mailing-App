@@ -11,10 +11,12 @@ enum class PacketType : int8_t
 	QueryClientsResponse,
 	QueryAllMessagesRequest,
 	QueryAllMessagesResponse,
+	ReciecedNewMessage,
+	UserConnected,
 	SendMessageRequest
 };
 
-static const char* packet_names[8] = {
+static const char* packet_names[10] = {
 	"Empty",
 	"LoginRequest",
 	"LoginResponse",
@@ -22,4 +24,6 @@ static const char* packet_names[8] = {
 	"QueryClientsResponse",
 	"QueryAllMessagesRequest",
 	"QueryAllMessagesResponse",
+	"ReciecedNewMessage",
+	"UserConnected",
 	"SendMessageRequest" };

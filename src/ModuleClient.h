@@ -21,6 +21,8 @@ private:
 	void onPacketReceivedLoginResponse(const InputMemoryStream &stream);
 	void onPacketReceivedQueryClientsResponse(const InputMemoryStream &stream);
 	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
+	void onPacketReceivedNewMessage(const InputMemoryStream &stream);
+	void onPacketReceivedUserConnected(const InputMemoryStream &stream);
 
 	void sendPacketLogin(const char *username, const char * password);
 	void sendPacketQueryClients();
@@ -102,16 +104,10 @@ private:
 	std::vector<uint8_t> sendBuffer;
 
 	// Online Chat
-	struct OtherClient
-	{
-		std::string name;
-		int state = 0;
-		bool typing = false;
-	};
-
-	std::vector<OtherClient> registered_clients;
+	std::vector<std::string> online_clients;
 
 	bool chat_active = true;
 	std::string chat_reciever;
+	bool scroll_chat = false;
 	std::vector<std::pair<bool, std::string>> chat_messages;
 };

@@ -103,7 +103,16 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 	ClientStateInfo & client = getClientStateInfoForSocket(socket);
 
 	if (client_logged)
+	{
 		client.loginName = loginName; // Register the client with this socket with the deserialized username
+
+		// Notify all others
+		for (auto c : clients)
+		{
+			if (c.loginName != loginName)
+				sendPacketUserConnected(c.socket, loginName.c_str());
+		}
+	}
 
 	sendPacketLoginResponse(socket, client_logged);
 }
@@ -124,7 +133,7 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 {
 	LOG("Sending all messages to %s", username.c_str());
 	// Obtain the list of messages from the DB
-	std::vector<Message> messages = database()->getAllMessagesReceivedByUser(username);
+	std::vector<Message> messages = database()->getAllMessagesFromUser(username);
 
 	OutputMemoryStream outStream;
 	// TODO: Create QueryAllMessagesResponse and serialize all the messages
@@ -138,7 +147,7 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 	for (; it != messages.end(); it++)
 	{
 		outStream.Write(it->senderUsername);
-		//outStream.Write(it->receiverUsername);
+		outStream.Write(it->receiverUsername);
 		outStream.Write(it->subject);
 		outStream.Write(it->body);
 	}
@@ -157,19 +166,38 @@ void ModuleServer::sendPacketLoginResponse(SOCKET socket, const bool connected)
 	sendPacket(socket, outStream);
 }
 
+void ModuleServer::sendPacketUserConnected(SOCKET socket, const char * client)
+{
+	OutputMemoryStream outStream;
+
+	outStream.Write(PacketType::UserConnected);
+	outStream.Write(std::string(client));
+
+	sendPacket(socket, outStream);
+}
+
+void ModuleServer::sendPacketMessageSent(SOCKET socket, const Message & message)
+{
+	OutputMemoryStream outStream;
+
+	outStream.Write(PacketType::ReciecedNewMessage);
+	outStream.Write(message.senderUsername);
+	//outStream.Write(it->receiverUsername);
+	outStream.Write(message.subject);
+	outStream.Write(message.body);
+
+	sendPacket(socket, outStream);
+}
+
 void ModuleServer::sendPacketQueryClientsResponse(SOCKET socket)
 {
 	LOG("Sending all clients");
 	OutputMemoryStream outStream;
 
 	outStream.Write(PacketType::QueryClientsResponse);
-	outStream.Write(clients.size());
+	outStream.Write((int)clients.size());
 
-	for (auto c : clients)
-	{
-		outStream.Write(c.loginName);
-		outStream.Write(c.state);
-	}
+	for (auto c : clients) outStream.Write(c.loginName);
 
 	sendPacket(socket, outStream);
 }
@@ -185,6 +213,17 @@ void ModuleServer::onPacketReceivedSendMessage(SOCKET socket, const InputMemoryS
 
 	// Insert the message in the database
 	database()->insertMessage(message);
+
+	// Look if client reciever is online
+	for (auto c : clients)
+	{
+		if (c.loginName == message.receiverUsername)
+		{
+			// Notify new message
+			sendPacketMessageSent(c.socket, message);
+			return;
+		}
+	}
 }
 
 void ModuleServer::sendPacket(SOCKET socket, OutputMemoryStream & stream)

@@ -91,6 +91,12 @@ void ModuleClient::onPacketReceived(const InputMemoryStream & stream)
 	case PacketType::QueryAllMessagesResponse:
 		onPacketReceivedQueryAllMessagesResponse(stream);
 		break;
+	case PacketType::ReciecedNewMessage:
+		onPacketReceivedNewMessage(stream);
+		break;
+	case PacketType::UserConnected:
+		onPacketReceivedUserConnected(stream);
+		break;
 	default:
 		LOG("Unknown packet type received");
 		break;
@@ -115,17 +121,16 @@ void ModuleClient::onPacketReceivedLoginResponse(const InputMemoryStream & strea
 
 void ModuleClient::onPacketReceivedQueryClientsResponse(const InputMemoryStream & stream)
 {
-	registered_clients.clear();
+	online_clients.clear();
 
 	uint32_t clientCount;
 	stream.Read(clientCount);
 
 	for (uint32_t i = 0; i < clientCount; i++)
 	{
-		OtherClient client;
-		stream.Read(client.name);
-		stream.Read(client.state);
-		registered_clients.push_back(client);
+		std::string client;
+		stream.Read(client);
+		online_clients.push_back(client);
 	}
 
 	messengerState = MessengerState::RequestingMessages;
@@ -145,13 +150,38 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 	{
 		Message m;
 		stream.Read(m.senderUsername);
-		m.receiverUsername = senderBuf; // itself
+		stream.Read(m.receiverUsername);
 		stream.Read(m.subject);
 		stream.Read(m.body);
 		messages.push_back(m);
 	}
 
 	messengerState = MessengerState::ShowingMessages;
+}
+
+void ModuleClient::onPacketReceivedNewMessage(const InputMemoryStream & stream)
+{
+	Message new_message;
+
+	stream.Read(new_message.senderUsername);
+	new_message.receiverUsername = senderBuf;
+	stream.Read(new_message.subject);
+	stream.Read(new_message.body);
+
+	messages.push_back(new_message);
+	
+	if (new_message.senderUsername == chat_reciever)
+	{
+		chat_messages.push_back({ true, new_message.body });
+		scroll_chat = true;
+	}
+}
+
+void ModuleClient::onPacketReceivedUserConnected(const InputMemoryStream & stream)
+{
+	std::string new_user;
+	stream.Read(new_user);
+	online_clients.push_back(new_user);
 }
 
 void ModuleClient::sendPacketLogin(const char * username, const char * password)
@@ -191,19 +221,33 @@ void ModuleClient::sendPacketSendMessage(const char * receiver, const char * sub
 {
 	OutputMemoryStream stream;
 
+	Message m;
+	m.senderUsername = senderBuf;
+	m.receiverUsername = chat_active ? chat_reciever : receiver;
+	m.subject = chat_active ? "/chat_message" : subject;
+	m.body = message;
+
 	// TODO: Serialize message (packet type and all fields in the message)
 	// NOTE: remember that senderBuf contains the current client (i.e. the sender of the message)
 	stream.Write(PacketType::SendMessageRequest);
-	stream.Write(std::string(senderBuf));
-	stream.Write(std::string(receiver));
-	stream.Write(std::string(subject));
-	stream.Write(std::string(message));
-
+	stream.Write(m.senderUsername);
+	stream.Write(m.receiverUsername);
+	stream.Write(m.subject);
+	stream.Write(m.body);
 
 	// TODO: Use sendPacket() to send the packet
 	sendPacket(stream);
 
-	messengerState = MessengerState::RequestingMessages;
+	// Add to messages
+	messages.push_back(m);
+
+	// Add to chat
+	if (chat_active) chat_messages.push_back({ false, m.body });
+
+	// Clear buffer
+	messageBuf[0] = '\0';
+
+	messengerState = MessengerState::ShowingMessages;
 }
 
 // This function is done for you: Takes the stream and schedules its internal buffer to be sent
@@ -233,14 +277,19 @@ void ModuleClient::updateGUI()
 		if (ImGui::Button("Disconnect"))
 			state = ClientState::Disconnecting;
 
+		if (ImGui::Button("Turn to Mail"))
+			chat_active = false;
+
+		ImGui::Separator();
+
 		// Chat select
-		std::vector<OtherClient>::iterator clients = registered_clients.begin();
-		for (; clients != registered_clients.end(); clients++)
+		std::vector<std::string>::iterator clients = online_clients.begin();
+		for (; clients != online_clients.end(); clients++)
 		{
-			if (ImGui::Button(clients->name.c_str()))
+			if (*clients != senderBuf && ImGui::Button(clients->c_str()))
 			{
 				// set new chat window reciever
-				chat_reciever = clients->name;
+				chat_reciever = *clients;
 
 				// add messages to chat
 				chat_messages.clear();
@@ -252,21 +301,28 @@ void ModuleClient::updateGUI()
 					else if (message->receiverUsername == chat_reciever)
 						chat_messages.push_back({ false, message->body });
 				}
+
+				scroll_chat = true;
 			}
 		}
 
 		ImGui::End();
 
+		ImGui::Begin("Online Chat", NULL,
+			ImGuiWindowFlags_NoScrollWithMouse &
+			ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
 		// Online Chat Window
 		if (chat_reciever.empty())
 		{
-			ImGui::Begin("Online Chat");
 			ImGui::TextWrapped("Select a user to chat with");
 		}
 		else
 		{
-			ImGui::Begin(chat_reciever.c_str());
+			ImGui::TextWrapped("%s -", chat_reciever.c_str());
+			ImGui::Separator();
 
+			ImGui::BeginChild("Chat", ImVec2(ImGui::GetWindowContentRegionWidth(), 205), false, ImGuiWindowFlags_HorizontalScrollbar);
 			ImGui::Columns(2, NULL, false);
 			std::vector<std::pair<bool, std::string>>::iterator it;
 			bool printing_on_left = true;
@@ -276,11 +332,27 @@ void ModuleClient::updateGUI()
 				{
 					printing_on_left = it->first;
 					ImGui::NextColumn();
+					ImGui::NextColumn();
+					ImGui::NextColumn();
 				}
 
 				ImGui::TextWrapped(it->second.c_str());
 			}
+
+			if (scroll_chat)
+			{
+				ImGui::SetScrollHere();
+				scroll_chat = false;
+			}
+
+			ImGui::EndChild();
 			ImGui::Columns(1);
+
+			ImGui::InputText("·", messageBuf, sizeof(messageBuf));
+			ImGui::SameLine();
+
+			if (ImGui::Button("Send") && messageBuf[0] != '\0')
+				messengerState = MessengerState::SendingMessage;
 		}
 
 		ImGui::End();
@@ -327,6 +399,9 @@ void ModuleClient::updateGUI()
 			// Disconnect button
 			if (ImGui::Button("Disconnect"))
 				state = ClientState::Disconnecting;
+
+			if (ImGui::Button("Turn to Chat"))
+				chat_active = true;
 
 			if (messengerState == MessengerState::ComposingMessage)
 			{
