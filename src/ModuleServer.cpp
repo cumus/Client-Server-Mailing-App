@@ -98,7 +98,7 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 
 	LOG(client_logged ?
 		"Client %s logged in" :
-		"Wrong credentials for %s", loginName);
+		"Wrong credentials for %s", loginName.c_str());
 
 	ClientStateInfo & client = getClientStateInfoForSocket(socket);
 
@@ -191,7 +191,9 @@ void ModuleServer::sendPacketMessageSent(SOCKET socket, const Message & message)
 
 void ModuleServer::sendPacketQueryClientsResponse(SOCKET socket)
 {
-	LOG("Sending all clients");
+	ClientStateInfo & clientStateInfo = getClientStateInfoForSocket(socket);
+	LOG("Sending clients connected to %s", clientStateInfo.loginName.c_str());
+
 	OutputMemoryStream outStream;
 
 	outStream.Write(PacketType::QueryClientsResponse);

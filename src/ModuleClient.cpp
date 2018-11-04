@@ -438,13 +438,16 @@ void ModuleClient::updateGUI()
 				int i = 0;
 				for (auto &message : messages)
 				{
-					ImGui::PushID(i++);
-					if (ImGui::TreeNode(&message, "%s - %s", message.senderUsername.c_str(), message.subject.c_str()))
+					if (message.senderUsername != senderBuf)
 					{
-						ImGui::TextWrapped("%s", message.body.c_str());
-						ImGui::TreePop();
+						ImGui::PushID(i++);
+						if (ImGui::TreeNode(&message, "%s - %s", message.senderUsername.c_str(), message.subject.c_str()))
+						{
+							ImGui::TextWrapped("%s", message.body.c_str());
+							ImGui::TreePop();
+						}
+						ImGui::PopID();
 					}
-					ImGui::PopID();
 				}
 			}
 		}
